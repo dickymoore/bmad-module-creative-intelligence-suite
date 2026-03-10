@@ -138,6 +138,27 @@ Reference:
 
 The converter prototype should use that pair to prove the snapshot approach before attempting other workflows.
 
+## Open Question: Normalize To `exec:` Or Preserve Existing Field Shapes
+
+The future converter still needs an explicit policy for agent menu rewrites.
+
+Current situation:
+
+- `design-thinking`, `innovation-strategy`, and `problem-solving` currently point to legacy workflows through `workflow:`
+- `storytelling` already uses `exec:`
+- the converted design-thinking slice now uses `exec:` to point at `SKILL.md`
+
+Decision still needed:
+
+- normalize all converted agent menu entries to `exec:` for consistency with the native-skill entrypoint
+- or preserve loader-compatible field shapes where they already differ and only rewrite the target value
+
+This should be decided before implementation because it affects:
+
+- the manifest schema
+- the expected after snapshots
+- whether mixed field shapes are considered valid converter output
+
 ## Out Of Scope For This Idea Branch
 
 - implementing the converter
