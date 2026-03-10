@@ -1,0 +1,72 @@
+snapshot_version: 1
+workflow_id: design-thinking
+
+before:
+  ref: origin/main
+  commit: 131768fbf9b843ce8dfd2ed75556f366eb3e6d9d
+  workflow_dir: src/workflows/design-thinking
+  files:
+    - src/workflows/design-thinking/README.md
+    - src/workflows/design-thinking/design-methods.csv
+    - src/workflows/design-thinking/instructions.md
+    - src/workflows/design-thinking/template.md
+    - src/workflows/design-thinking/workflow.yaml
+  agent_target:
+    file: src/agents/design-thinking-coach.agent.yaml
+    key: workflow
+    value: "{project-root}/_bmad/cis/workflows/design-thinking/workflow.yaml"
+  module_help:
+    file: src/module-help.csv
+    row_code: DT
+    workflow_file: _bmad/cis/workflows/design-thinking/workflow.yaml
+
+after_reference:
+  ref: feature/native-skills-design-thinking-first-slice
+  commit: b3a0101281ad46fe68754c3992e2c174c5af2a02
+  workflow_dir: src/workflows/bmad-cis-design-thinking
+  files:
+    - src/workflows/bmad-cis-design-thinking/SKILL.md
+    - src/workflows/bmad-cis-design-thinking/bmad-skill-manifest.yaml
+    - src/workflows/bmad-cis-design-thinking/design-methods.csv
+    - src/workflows/bmad-cis-design-thinking/template.md
+    - src/workflows/bmad-cis-design-thinking/workflow.md
+  workflow_frontmatter:
+    name: bmad-cis-design-thinking
+    description: Guide human-centered design processes using empathy-driven methodologies. Use when the user says "lets run design thinking" or "I want to apply design thinking"
+  agent_target:
+    file: src/agents/design-thinking-coach.agent.yaml
+    key: exec
+    value: "{project-root}/_bmad/cis/workflows/bmad-cis-design-thinking/SKILL.md"
+  module_help:
+    file: src/module-help.csv
+    row_code: DT
+    workflow_file: skill:bmad-cis-design-thinking
+  allowlisted_repo_refs_touched:
+    - AGENTS.md
+    - src/workflows/README.md
+
+expected_transform:
+  rename:
+    from: src/workflows/design-thinking
+    to: src/workflows/bmad-cis-design-thinking
+  preserve_byte_for_byte:
+    - src/workflows/bmad-cis-design-thinking/design-methods.csv
+    - src/workflows/bmad-cis-design-thinking/template.md
+  create:
+    - src/workflows/bmad-cis-design-thinking/SKILL.md
+    - src/workflows/bmad-cis-design-thinking/bmad-skill-manifest.yaml
+    - src/workflows/bmad-cis-design-thinking/workflow.md
+  delete:
+    - src/workflows/design-thinking/README.md
+    - src/workflows/design-thinking/instructions.md
+    - src/workflows/design-thinking/workflow.yaml
+  rewrite:
+    - file: src/agents/design-thinking-coach.agent.yaml
+      change: workflow key/value -> exec key/value
+    - file: src/module-help.csv
+      change: workflow-file -> skill:bmad-cis-design-thinking
+
+deterministic_assertions:
+  - do not touch other CIS workflow directories
+  - do not rewrite files outside the allowlist
+  - do not guess missing metadata; stop if the manifest entry is incomplete

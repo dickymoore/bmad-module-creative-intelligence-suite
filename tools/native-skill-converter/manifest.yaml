@@ -1,0 +1,173 @@
+version: 1
+
+defaults:
+  source_root: src/workflows
+  snapshot_root: tools/native-skill-converter/snapshots
+  standard_profile: cis-legacy-workflow-to-native-skill
+  fail_closed: true
+
+workflows:
+  - id: design-thinking
+    status: seeded-reference
+    canonical_skill_id: bmad-cis-design-thinking
+    source_dir: src/workflows/design-thinking
+    target_dir: src/workflows/bmad-cis-design-thinking
+    profile: cis-legacy-workflow-to-native-skill
+    legacy_inventory:
+      workflow_file: workflow.yaml
+      instructions_file: instructions.md
+      template_file: template.md
+      data_files:
+        - design-methods.csv
+      extra_files:
+        - README.md
+    preserve_files:
+      - design-methods.csv
+      - template.md
+    create_files:
+      - SKILL.md
+      - bmad-skill-manifest.yaml
+      - workflow.md
+    delete_legacy_files:
+      - README.md
+      - instructions.md
+      - workflow.yaml
+    agent_target:
+      file: src/agents/design-thinking-coach.agent.yaml
+      before_key: workflow
+      before_value: "{project-root}/_bmad/cis/workflows/design-thinking/workflow.yaml"
+      after_key: exec
+      after_value: "{project-root}/_bmad/cis/workflows/bmad-cis-design-thinking/SKILL.md"
+    module_help:
+      file: src/module-help.csv
+      row_code: DT
+      before_workflow_file: _bmad/cis/workflows/design-thinking/workflow.yaml
+      after_workflow_file: skill:bmad-cis-design-thinking
+    allowlisted_repo_refs:
+      - AGENTS.md
+      - src/workflows/README.md
+    seeded_snapshot:
+      file: tools/native-skill-converter/snapshots/design-thinking.yaml
+      before_ref: origin/main
+      before_commit: 131768fbf9b843ce8dfd2ed75556f366eb3e6d9d
+      after_ref: feature/native-skills-design-thinking-first-slice
+      after_commit: b3a0101281ad46fe68754c3992e2c174c5af2a02
+
+  - id: innovation-strategy
+    status: candidate
+    canonical_skill_id: bmad-cis-innovation-strategy
+    source_dir: src/workflows/innovation-strategy
+    target_dir: src/workflows/bmad-cis-innovation-strategy
+    profile: cis-legacy-workflow-to-native-skill
+    legacy_inventory:
+      workflow_file: workflow.yaml
+      instructions_file: instructions.md
+      template_file: template.md
+      data_files:
+        - innovation-frameworks.csv
+      extra_files:
+        - README.md
+    preserve_files:
+      - innovation-frameworks.csv
+      - template.md
+    create_files:
+      - SKILL.md
+      - bmad-skill-manifest.yaml
+      - workflow.md
+    delete_legacy_files:
+      - README.md
+      - instructions.md
+      - workflow.yaml
+    agent_target:
+      file: src/agents/innovation-strategist.agent.yaml
+      before_key: workflow
+      before_value: "{project-root}/_bmad/cis/workflows/innovation-strategy/workflow.yaml"
+      after_key: exec
+      after_value: "{project-root}/_bmad/cis/workflows/bmad-cis-innovation-strategy/SKILL.md"
+    module_help:
+      file: src/module-help.csv
+      row_code: IS
+      before_workflow_file: _bmad/cis/workflows/innovation-strategy/workflow.yaml
+      after_workflow_file: skill:bmad-cis-innovation-strategy
+
+  - id: problem-solving
+    status: candidate
+    canonical_skill_id: bmad-cis-problem-solving
+    source_dir: src/workflows/problem-solving
+    target_dir: src/workflows/bmad-cis-problem-solving
+    profile: cis-legacy-workflow-to-native-skill
+    legacy_inventory:
+      workflow_file: workflow.yaml
+      instructions_file: instructions.md
+      template_file: template.md
+      data_files:
+        - solving-methods.csv
+      extra_files:
+        - README.md
+    preserve_files:
+      - solving-methods.csv
+      - template.md
+    create_files:
+      - SKILL.md
+      - bmad-skill-manifest.yaml
+      - workflow.md
+    delete_legacy_files:
+      - README.md
+      - instructions.md
+      - workflow.yaml
+    agent_target:
+      file: src/agents/creative-problem-solver.agent.yaml
+      before_key: workflow
+      before_value: "{project-root}/_bmad/cis/workflows/problem-solving/workflow.yaml"
+      after_key: exec
+      after_value: "{project-root}/_bmad/cis/workflows/bmad-cis-problem-solving/SKILL.md"
+    module_help:
+      file: src/module-help.csv
+      row_code: PS
+      before_workflow_file: _bmad/cis/workflows/problem-solving/workflow.yaml
+      after_workflow_file: skill:bmad-cis-problem-solving
+
+  - id: storytelling
+    status: requires-exception-profile
+    canonical_skill_id: bmad-cis-storytelling
+    source_dir: src/workflows/storytelling
+    target_dir: src/workflows/bmad-cis-storytelling
+    profile: cis-storytelling-sidecar-skill
+    legacy_inventory:
+      workflow_file: workflow.yaml
+      instructions_file: instructions.md
+      template_file: template.md
+      data_files:
+        - story-types.csv
+      extra_files:
+        - README.md
+    preserve_files:
+      - story-types.csv
+      - template.md
+    create_files:
+      - SKILL.md
+      - bmad-skill-manifest.yaml
+      - workflow.md
+    delete_legacy_files:
+      - README.md
+      - instructions.md
+      - workflow.yaml
+    agent_target:
+      file: src/agents/storyteller/storyteller.agent.yaml
+      before_key: exec
+      before_value: "{project-root}/_bmad/cis/workflows/storytelling/workflow.yaml"
+      after_key: exec
+      after_value: "{project-root}/_bmad/cis/workflows/bmad-cis-storytelling/SKILL.md"
+    module_help:
+      file: src/module-help.csv
+      row_code: ST
+      before_workflow_file: _bmad/cis/workflows/storytelling/workflow.yaml
+      after_workflow_file: skill:bmad-cis-storytelling
+    exception_flags:
+      - sidecar_agent
+      - nested_agent_directory
+      - existing_exec_wiring
+      - sidecar_memory_files
+    sidecar_files:
+      - src/agents/storyteller/storyteller-sidecar/story-preferences.md
+      - src/agents/storyteller/storyteller-sidecar/stories-told.md
