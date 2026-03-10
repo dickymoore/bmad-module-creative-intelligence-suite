@@ -159,6 +159,56 @@ This should be decided before implementation because it affects:
 - the expected after snapshots
 - whether mixed field shapes are considered valid converter output
 
+Tradeoff:
+
+- always normalizing to `exec:` gives one clearer target shape for native-skill entrypoints and simplifies the converter's expected output
+- preserving loader-compatible field shapes reduces rewrite scope and may better match existing repo conventions where mixed shapes are already accepted
+
+Why this matters:
+
+- if the policy is not fixed up front, the converter can still produce functionally correct output while drifting structurally between runs or between workflows
+- that would make snapshots harder to approve and would weaken the claim that the converter is deterministic in both content and shape
+
+## Open Question: Snapshot Scope
+
+The future converter also needs an explicit boundary for what snapshots are allowed to cover.
+
+Decision still needed:
+
+- keep snapshots limited to the converter-managed surface
+- or include maintainer-doc fallout when source moves make repo notes or reference docs stale
+
+Tradeoff:
+
+- a managed-surface-only snapshot keeps the converter narrow and easier to reason about
+- including maintainer-doc fallout may produce a more complete branch diff, but it expands the converter from packaging into documentation maintenance
+
+Why this matters:
+
+- the wider the snapshot surface becomes, the easier it is for normal docs drift to break deterministic conversion checks
+- if maintainer-doc rewrites are included, they need their own explicit allowlist rules rather than being folded into the conversion implicitly
+
+## Open Question: First Implementation Scope
+
+The first real implementation still needs a sequencing decision.
+
+Recommended first cut:
+
+- build a minimal runner plus snapshot comparator
+- support `design-thinking` only
+- prove that the generated output matches the pinned reference snapshot before attempting any additional workflows
+
+Tradeoff:
+
+- starting with `design-thinking` only is slower in the short term because it does not immediately unlock the whole workflow set
+- but it sharply reduces risk because the first executable version is validated against a real approved conversion instead of multiple partially-understood targets
+
+Why this matters:
+
+- `innovation-strategy` and `problem-solving` likely fit the standard profile, but `storytelling` already requires exception handling
+- if the converter tries to support all workflows in its first implementation, failures in one profile can mask whether the standard profile is actually stable
+- a design-thinking-only runner creates the smallest possible proof that the manifest model and snapshot model are sound
+
 ## Out Of Scope For This Idea Branch
 
 - implementing the converter
