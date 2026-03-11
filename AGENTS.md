@@ -39,9 +39,10 @@ src/
 │   └── storyteller/     # Sidecar agents with persistent memory
 ├── workflows/           # Structured methodologies
 │   ├── bmad-cis-design-thinking/
-│   ├── innovation-strategy/
+│   ├── bmad-cis-innovation-strategy/
 │   ├── problem-solving/
-│   └── storytelling/
+│   ├── storytelling/
+│   └── ...mixed legacy/native during transition
 ├── teams/               # Multi-agent collaboration configs
 └── module.yaml          # Module metadata and installation config
 ```
