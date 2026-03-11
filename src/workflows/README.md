@@ -41,7 +41,7 @@ Five interactive workflows facilitating creative and strategic processes through
 
 **Output:** Strategic innovation roadmap
 
-### [Problem Solving](./problem-solving)
+### [Problem Solving](./bmad-cis-problem-solving)
 
 **Purpose:** Systematic challenge resolution
 

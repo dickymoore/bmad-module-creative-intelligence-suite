@@ -40,7 +40,7 @@ src/
 ├── workflows/           # Structured methodologies
 │   ├── bmad-cis-design-thinking/
 │   ├── bmad-cis-innovation-strategy/
-│   ├── problem-solving/
+│   ├── bmad-cis-problem-solving/
 │   ├── storytelling/
 │   └── ...mixed legacy/native during transition
 ├── teams/               # Multi-agent collaboration configs
