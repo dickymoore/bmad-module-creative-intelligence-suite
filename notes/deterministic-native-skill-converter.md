@@ -4,7 +4,24 @@
 
 Define a small, fail-closed converter that can reproduce approved CIS native-skill conversions without guessing.
 
-This branch is idea-only. It does not convert any workflows.
+This branch is prototype-only. It does not mutate repo workflows in place; the converter generates and checks deterministic output outside the working tree.
+
+## Current Thread Steer
+
+The current native-skills thread changes the target mold from the first converted PR shape.
+
+Direction now encoded by this prototype:
+
+- for simple skills like `design-thinking`, keep the prompt directly in root `SKILL.md`
+- do not use a root `SKILL.md` -> `workflow.md` redirect for the seeded simple case
+- keep only `SKILL.md` at skill root
+- place the skill manifest and runtime companions under `resources/`
+- normalize converted agent menu entries to `exec:`
+- keep converter validation narrow and attached to real conversions rather than building a separate validator project
+
+Implication:
+
+- the existing `feature/native-skills-design-thinking-first-slice` branch remains useful source material, but it is no longer the preferred final mold for the converter prototype because it still reflects the intermediate `SKILL.md` + `workflow.md` layout
 
 ## Why This Is Feasible
 
@@ -31,7 +48,7 @@ The converter should not try to infer intent from arbitrary workflow folders.
 Reasons:
 
 - the mechanical file shape is similar, but the external wiring is not identical
-- some workflows use `workflow:` in the agent menu while others already use `exec:`
+- some workflows currently use `workflow:` in the agent menu while others already use `exec:`
 - some workflows can use a standard conversion profile while others need explicit exception handling
 - repo-internal follow-up edits should be allowlisted, not discovered heuristically
 - deterministic output requires an explicit source inventory, target inventory, and rewrite list
@@ -54,21 +71,21 @@ For a supported standard CIS workflow, the converter should:
 2. Validate the exact legacy source inventory.
 3. Validate the exact agent/menu target and `module-help.csv` row before any edits.
 4. Rename the workflow directory to the canonical skill id.
-5. Preserve the runtime companion files listed in the manifest, byte-for-byte.
-6. Synthesize `SKILL.md` from canonical id and approved description text.
-7. Synthesize `bmad-skill-manifest.yaml` with `type: skill`.
-8. Synthesize `workflow.md` by merging `workflow.yaml` and `instructions.md` using the manifest profile:
+5. Preserve the runtime companion files listed in the manifest, byte-for-byte, under `resources/`.
+6. Synthesize root `SKILL.md` by merging `workflow.yaml` and `instructions.md` using the manifest profile:
+   - keep the prompt directly in `SKILL.md` for the simple seeded case
    - move config loading into initialization
-   - convert installed-path references to skill-local references where appropriate
+   - convert installed-path references to `resources/` paths where appropriate
    - keep behavioral constraints
-   - drop loader/runner scaffolding
-9. Delete legacy entry files only if the manifest says to delete them.
-10. Rewrite only the allowlisted external references:
+   - drop legacy loader/runner scaffolding
+7. Synthesize `resources/bmad-skill-manifest.yaml` with `type: skill`.
+8. Delete legacy entry files only if the manifest says to delete them.
+9. Rewrite only the allowlisted external references:
    - agent menu target
    - `module-help.csv` workflow-file value
    - explicitly listed repo-internal notes/docs if approved
-11. Emit a normalized before/after snapshot for verification.
-12. Stop if any produced file set or rewritten value differs from the manifest and snapshot expectations.
+10. Emit a normalized before/after snapshot for verification.
+11. Stop if any produced file set or rewritten value differs from the manifest and snapshot expectations.
 
 ## Known Exceptions Already Found
 
@@ -134,80 +151,61 @@ Reason:
 Reference:
 
 - before ref: `origin/main` at `131768fbf9b843ce8dfd2ed75556f366eb3e6d9d`
-- after ref: `feature/native-skills-design-thinking-first-slice` at `b3a0101281ad46fe68754c3992e2c174c5af2a02`
+- after label: `design-thinking-simple-skill`
 
-The converter prototype should use that pair to prove the snapshot approach before attempting other workflows.
+The converter prototype should use that pinned before ref plus the committed after fixtures to prove the snapshot approach before attempting other workflows.
 
-## Open Question: Normalize To `exec:` Or Preserve Existing Field Shapes
+## Decision: Normalize Converted Agent Menu Entries To `exec:`
 
-The future converter still needs an explicit policy for agent menu rewrites.
+The converter now treats `exec:` as canonical for native-skill entrypoints.
 
-Current situation:
+Why this is the chosen direction:
 
 - `design-thinking`, `innovation-strategy`, and `problem-solving` currently point to legacy workflows through `workflow:`
 - `storytelling` already uses `exec:`
-- the converted design-thinking slice now uses `exec:` to point at `SKILL.md`
-
-Decision still needed:
-
-- normalize all converted agent menu entries to `exec:` for consistency with the native-skill entrypoint
-- or preserve loader-compatible field shapes where they already differ and only rewrite the target value
-
-This should be decided before implementation because it affects:
-
-- the manifest schema
-- the expected after snapshots
-- whether mixed field shapes are considered valid converter output
-
-Tradeoff:
-
-- always normalizing to `exec:` gives one clearer target shape for native-skill entrypoints and simplifies the converter's expected output
-- preserving loader-compatible field shapes reduces rewrite scope and may better match existing repo conventions where mixed shapes are already accepted
+- the active BMAD direction is to execute native skills through `exec` rather than keep mixed legacy command shapes
+- a single canonical field makes the manifest and expected after snapshots structurally uniform
 
 Why this matters:
 
-- if the policy is not fixed up front, the converter can still produce functionally correct output while drifting structurally between runs or between workflows
-- that would make snapshots harder to approve and would weaken the claim that the converter is deterministic in both content and shape
+- without a fixed rewrite policy, the converter could produce functionally correct but structurally mixed output
+- that would weaken the deterministic claim and make snapshot approval harder across workflows
 
-## Open Question: Snapshot Scope
+## Decision: Snapshot Scope Stays On The Converter-Managed Surface
 
-The future converter also needs an explicit boundary for what snapshots are allowed to cover.
+The seeded snapshots intentionally cover only:
 
-Decision still needed:
+- workflow directory file inventory
+- preserved runtime companions
+- synthesized skill files
+- agent target rewrite
+- `module-help.csv` rewrite
+- explicitly allowlisted repo-internal references when needed
 
-- keep snapshots limited to the converter-managed surface
-- or include maintainer-doc fallout when source moves make repo notes or reference docs stale
+Why this is the chosen boundary:
 
-Tradeoff:
+- it keeps the converter lean
+- it avoids turning packaging into general repo documentation maintenance
+- it lets deterministic checks fail only on surfaces the converter actually owns
 
-- a managed-surface-only snapshot keeps the converter narrow and easier to reason about
-- including maintainer-doc fallout may produce a more complete branch diff, but it expands the converter from packaging into documentation maintenance
+Implication:
 
-Why this matters:
+- maintainer-doc fallout can still be noted, but it should not be folded into the deterministic converter unless it gets its own explicit allowlist rules
 
-- the wider the snapshot surface becomes, the easier it is for normal docs drift to break deterministic conversion checks
-- if maintainer-doc rewrites are included, they need their own explicit allowlist rules rather than being folded into the conversion implicitly
+## Decision: First Implementation Scope Is `design-thinking` Only
 
-## Open Question: First Implementation Scope
+The executable runner intentionally supports only the seeded `design-thinking` case.
 
-The first real implementation still needs a sequencing decision.
+Why this is the chosen first cut:
 
-Recommended first cut:
+- it is the smallest verified CIS-native workflow
+- it already has a real converted slice to learn from
+- it lets the branch prove the manifest model and snapshot model before taking on additional profiles
 
-- build a minimal runner plus snapshot comparator
-- support `design-thinking` only
-- prove that the generated output matches the pinned reference snapshot before attempting any additional workflows
+Implication:
 
-Tradeoff:
-
-- starting with `design-thinking` only is slower in the short term because it does not immediately unlock the whole workflow set
-- but it sharply reduces risk because the first executable version is validated against a real approved conversion instead of multiple partially-understood targets
-
-Why this matters:
-
-- `innovation-strategy` and `problem-solving` likely fit the standard profile, but `storytelling` already requires exception handling
-- if the converter tries to support all workflows in its first implementation, failures in one profile can mask whether the standard profile is actually stable
-- a design-thinking-only runner creates the smallest possible proof that the manifest model and snapshot model are sound
+- `innovation-strategy` and `problem-solving` remain declarative manifest entries until the standard profile is proven stable
+- `storytelling` stays blocked behind an explicit exception profile
 
 ## Out Of Scope For This Idea Branch
 

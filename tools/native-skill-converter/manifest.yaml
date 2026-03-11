@@ -22,12 +22,13 @@ workflows:
       extra_files:
         - README.md
     preserve_files:
-      - design-methods.csv
-      - template.md
+      - source: design-methods.csv
+        target: resources/design-methods.csv
+      - source: template.md
+        target: resources/template.md
     create_files:
       - SKILL.md
-      - bmad-skill-manifest.yaml
-      - workflow.md
+      - resources/bmad-skill-manifest.yaml
     delete_legacy_files:
       - README.md
       - instructions.md
@@ -50,8 +51,7 @@ workflows:
       file: tools/native-skill-converter/snapshots/design-thinking.yaml
       before_ref: origin/main
       before_commit: 131768fbf9b843ce8dfd2ed75556f366eb3e6d9d
-      after_ref: feature/native-skills-design-thinking-first-slice
-      after_commit: b3a0101281ad46fe68754c3992e2c174c5af2a02
+      after_label: design-thinking-simple-skill
 
   - id: innovation-strategy
     status: candidate
@@ -68,12 +68,13 @@ workflows:
       extra_files:
         - README.md
     preserve_files:
-      - innovation-frameworks.csv
-      - template.md
+      - source: innovation-frameworks.csv
+        target: resources/innovation-frameworks.csv
+      - source: template.md
+        target: resources/template.md
     create_files:
       - SKILL.md
-      - bmad-skill-manifest.yaml
-      - workflow.md
+      - resources/bmad-skill-manifest.yaml
     delete_legacy_files:
       - README.md
       - instructions.md
@@ -105,12 +106,13 @@ workflows:
       extra_files:
         - README.md
     preserve_files:
-      - solving-methods.csv
-      - template.md
+      - source: solving-methods.csv
+        target: resources/solving-methods.csv
+      - source: template.md
+        target: resources/template.md
     create_files:
       - SKILL.md
-      - bmad-skill-manifest.yaml
-      - workflow.md
+      - resources/bmad-skill-manifest.yaml
     delete_legacy_files:
       - README.md
       - instructions.md
@@ -142,12 +144,13 @@ workflows:
       extra_files:
         - README.md
     preserve_files:
-      - story-types.csv
-      - template.md
+      - source: story-types.csv
+        target: resources/story-types.csv
+      - source: template.md
+        target: resources/template.md
     create_files:
       - SKILL.md
-      - bmad-skill-manifest.yaml
-      - workflow.md
+      - resources/bmad-skill-manifest.yaml
     delete_legacy_files:
       - README.md
       - instructions.md

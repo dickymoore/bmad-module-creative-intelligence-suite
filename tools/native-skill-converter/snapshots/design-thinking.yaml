@@ -20,19 +20,23 @@ before:
     row_code: DT
     workflow_file: _bmad/cis/workflows/design-thinking/workflow.yaml
 
-after_reference:
-  ref: feature/native-skills-design-thinking-first-slice
-  commit: b3a0101281ad46fe68754c3992e2c174c5af2a02
+after:
+  label: design-thinking-simple-skill
   workflow_dir: src/workflows/bmad-cis-design-thinking
   files:
     - src/workflows/bmad-cis-design-thinking/SKILL.md
-    - src/workflows/bmad-cis-design-thinking/bmad-skill-manifest.yaml
-    - src/workflows/bmad-cis-design-thinking/design-methods.csv
-    - src/workflows/bmad-cis-design-thinking/template.md
-    - src/workflows/bmad-cis-design-thinking/workflow.md
-  workflow_frontmatter:
+    - src/workflows/bmad-cis-design-thinking/resources/bmad-skill-manifest.yaml
+    - src/workflows/bmad-cis-design-thinking/resources/design-methods.csv
+    - src/workflows/bmad-cis-design-thinking/resources/template.md
+  generated_fixture_root: tools/native-skill-converter/snapshots/expected/design-thinking
+  generated_files:
+    - src/workflows/bmad-cis-design-thinking/SKILL.md
+    - src/workflows/bmad-cis-design-thinking/resources/bmad-skill-manifest.yaml
+  skill_frontmatter:
     name: bmad-cis-design-thinking
     description: Guide human-centered design processes using empathy-driven methodologies. Use when the user says "lets run design thinking" or "I want to apply design thinking"
+    standalone: true
+    main_config: "{project-root}/_bmad/cis/config.yaml"
   agent_target:
     file: src/agents/design-thinking-coach.agent.yaml
     key: exec
@@ -50,12 +54,11 @@ expected_transform:
     from: src/workflows/design-thinking
     to: src/workflows/bmad-cis-design-thinking
   preserve_byte_for_byte:
-    - src/workflows/bmad-cis-design-thinking/design-methods.csv
-    - src/workflows/bmad-cis-design-thinking/template.md
+    - src/workflows/bmad-cis-design-thinking/resources/design-methods.csv
+    - src/workflows/bmad-cis-design-thinking/resources/template.md
   create:
     - src/workflows/bmad-cis-design-thinking/SKILL.md
-    - src/workflows/bmad-cis-design-thinking/bmad-skill-manifest.yaml
-    - src/workflows/bmad-cis-design-thinking/workflow.md
+    - src/workflows/bmad-cis-design-thinking/resources/bmad-skill-manifest.yaml
   delete:
     - src/workflows/design-thinking/README.md
     - src/workflows/design-thinking/instructions.md
@@ -67,6 +70,9 @@ expected_transform:
       change: workflow-file -> skill:bmad-cis-design-thinking
 
 deterministic_assertions:
+  - generated skill root contains only SKILL.md
+  - runtime companions and manifest live under resources/
+  - normalize converted agent entry to exec
   - do not touch other CIS workflow directories
   - do not rewrite files outside the allowlist
   - do not guess missing metadata; stop if the manifest entry is incomplete

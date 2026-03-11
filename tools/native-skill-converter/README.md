@@ -18,7 +18,7 @@ Use explicit manifests and snapshots to convert only known CIS workflows from:
 
 to:
 
-- canonical `type: skill` directories with `SKILL.md` and `workflow.md`
+- simple native-skill directories with root `SKILL.md` and runtime companions under `resources/`
 
 ## Prototype Surface
 
@@ -50,7 +50,7 @@ The current prototype is intentionally narrow:
 - supported workflow id: `design-thinking`
 - supported profile: `cis-legacy-workflow-to-native-skill`
 - output mode: generated files only, outside the working tree by default
-- verification mode: compare generated output to the pinned seeded reference commit
+- verification mode: compare generated output to seeded snapshot fixtures after proving the current source still matches the pinned before snapshot commit
 
 Other manifest entries remain declarative only.
 
@@ -80,14 +80,15 @@ The current runner already takes one workflow id and fails closed unless:
 
 - the source inventory matches the manifest exactly
 - the current external references match the manifest exactly
-- the produced output matches the expected seeded reference output when `--check` is used
+- the current legacy source files still match the pinned before snapshot commit when `--check` is used
+- the produced output matches the expected seeded simple-skill snapshot when `--check` is used
 
 ## Snapshot Idea
 
 The seeded snapshot for `design-thinking` ties together:
 
 - the before state on `origin/main`
-- the approved after state from the separate reference branch
+- the approved simple-skill target shape encoded as local generated-file fixtures plus expected inventory
 
 That reference lets a future converter prove:
 

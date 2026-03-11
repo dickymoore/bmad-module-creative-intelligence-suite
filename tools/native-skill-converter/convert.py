@@ -83,6 +83,33 @@ def expected_legacy_files(entry: dict) -> list[str]:
     return sorted(files)
 
 
+def preserved_file_mappings(entry: dict) -> list[tuple[str, str]]:
+    mappings = []
+    for item in entry.get("preserve_files", []):
+        if isinstance(item, str):
+            mappings.append((item, item))
+            continue
+        if (
+            isinstance(item, dict)
+            and isinstance(item.get("source"), str)
+            and isinstance(item.get("target"), str)
+        ):
+            mappings.append((item["source"], item["target"]))
+            continue
+        raise ConversionError("Manifest preserve_files entries must be strings or {source, target} objects")
+    return mappings
+
+
+def expected_generated_files(entry: dict) -> list[str]:
+    target_dir = Path(entry["target_dir"])
+    files = [(target_dir / relative_path).as_posix() for relative_path in entry["create_files"]]
+    files.extend(
+        (target_dir / target_relative_path).as_posix()
+        for _, target_relative_path in preserved_file_mappings(entry)
+    )
+    return sorted(files)
+
+
 def validate_agent_target(entry: dict) -> None:
     agent_yaml = load_yaml(ROOT_DIR / entry["agent_target"]["file"])
     menu = agent_yaml.get("agent", {}).get("menu", [])
@@ -123,11 +150,19 @@ def validate_before_snapshot(entry: dict, snapshot: dict) -> None:
     if not source_dir.is_dir():
         raise ConversionError(f"Missing source workflow directory: {source_dir}")
 
+    expected_files = sorted(
+        (source_dir / name).relative_to(ROOT_DIR).as_posix()
+        for name in expected_legacy_files(entry)
+    )
+    if expected_files != snapshot["before"]["files"]:
+        raise ConversionError(
+            "Manifest legacy inventory does not match the seeded before snapshot"
+        )
+
     actual_files = sorted(
         (source_dir / name).relative_to(ROOT_DIR).as_posix()
         for name in source_file_inventory(source_dir)
     )
-    expected_files = snapshot["before"]["files"]
     if actual_files != expected_files:
         raise ConversionError(
             "Legacy workflow inventory does not match the seeded before snapshot"
@@ -135,6 +170,17 @@ def validate_before_snapshot(entry: dict, snapshot: dict) -> None:
 
     validate_agent_target(entry)
     validate_module_help(entry)
+
+
+def validate_before_snapshot_contents(snapshot: dict) -> None:
+    before_commit = snapshot["before"]["commit"]
+    for relative_path in snapshot["before"]["files"]:
+        actual_bytes = (ROOT_DIR / relative_path).read_bytes()
+        expected_bytes = git_show(before_commit, relative_path)
+        if actual_bytes != expected_bytes:
+            raise ConversionError(
+                f"Current source file does not match pinned before snapshot commit: {relative_path}"
+            )
 
 
 def validate_design_thinking_source(entry: dict, workflow_config: dict, instructions: str) -> None:
@@ -177,25 +223,11 @@ def validate_design_thinking_source(entry: dict, workflow_config: dict, instruct
             )
 
 
-def build_skill_md(skill_id: str, description: str) -> str:
-    template = """---
-name: __SKILL_ID__
-description: '__DESCRIPTION__'
----
-
-Follow the instructions in [workflow.md](workflow.md).
-"""
-    return (
-        template.replace("__SKILL_ID__", skill_id)
-        .replace("__DESCRIPTION__", description)
-    )
-
-
 def build_skill_manifest() -> str:
     return "type: skill\n"
 
 
-def build_design_thinking_workflow_md(skill_id: str, description: str, main_config: str) -> str:
+def build_design_thinking_skill_md(skill_id: str, description: str, main_config: str) -> str:
     template = """---
 name: __SKILL_ID__
 description: '__DESCRIPTION__'
@@ -203,7 +235,7 @@ standalone: true
 main_config: '__MAIN_CONFIG__'
 ---
 
-# Design Thinking Workflow
+# Design Thinking Skill
 
 **Goal:** Guide human-centered design through empathy, definition, ideation, prototyping, and testing.
 
@@ -224,9 +256,11 @@ Load config from `{main_config}` and resolve:
 
 ### Paths
 
+- `resource_root` = `./resources`
 - `skill_path` = `{project-root}/_bmad/cis/workflows/bmad-cis-design-thinking`
-- `template_file` = `./template.md`
-- `design_methods_file` = `./design-methods.csv`
+- `skill_manifest_file` = `{resource_root}/bmad-skill-manifest.yaml`
+- `template_file` = `{resource_root}/template.md`
+- `design_methods_file` = `{resource_root}/design-methods.csv`
 - `default_output_file` = `{output_folder}/design-thinking-{date}.md`
 
 ### Inputs
@@ -466,32 +500,55 @@ def convert_design_thinking(entry: dict, output_root: Path) -> None:
     skill_id = entry["canonical_skill_id"]
     main_config = workflow_config["config_source"]
 
-    for filename in entry["preserve_files"]:
-        shutil.copy2(source_dir / filename, target_dir / filename)
+    for source_name, target_relative_path in preserved_file_mappings(entry):
+        destination = target_dir / target_relative_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_dir / source_name, destination)
 
-    write_text(target_dir / "SKILL.md", build_skill_md(skill_id, description))
-    write_text(target_dir / "bmad-skill-manifest.yaml", build_skill_manifest())
     write_text(
-        target_dir / "workflow.md",
-        build_design_thinking_workflow_md(skill_id, description, main_config),
+        target_dir / "SKILL.md",
+        build_design_thinking_skill_md(skill_id, description, main_config),
     )
+    write_text(target_dir / "resources" / "bmad-skill-manifest.yaml", build_skill_manifest())
 
 
-def compare_generated_to_reference(output_root: Path, snapshot: dict) -> None:
-    expected_files = snapshot["after_reference"]["files"]
+def compare_generated_to_snapshot(entry: dict, output_root: Path, snapshot: dict) -> None:
+    expected_files = expected_generated_files(entry)
+    if expected_files != snapshot["after"]["files"]:
+        raise ConversionError(
+            "Manifest generated inventory does not match the seeded after snapshot"
+        )
+
     actual_files = relative_file_inventory(output_root)
     if actual_files != expected_files:
         raise ConversionError(
-            "Generated file inventory does not match the seeded after-reference snapshot"
+            "Generated file inventory does not match the seeded after snapshot"
         )
 
-    after_commit = snapshot["after_reference"]["commit"]
-    for relative_path in expected_files:
+    fixture_root = ROOT_DIR / snapshot["after"]["generated_fixture_root"]
+    fixture_files = relative_file_inventory(fixture_root)
+    if fixture_files != snapshot["after"]["generated_files"]:
+        raise ConversionError(
+            "Seeded generated-file fixtures do not match the after snapshot"
+        )
+
+    for relative_path in snapshot["after"]["generated_files"]:
         actual_bytes = (output_root / relative_path).read_bytes()
-        expected_bytes = git_show(after_commit, relative_path)
+        expected_bytes = (fixture_root / relative_path).read_bytes()
         if actual_bytes != expected_bytes:
             raise ConversionError(
-                f"Generated file does not match reference commit output: {relative_path}"
+                f"Generated file does not match seeded after snapshot: {relative_path}"
+            )
+
+    source_dir = ROOT_DIR / entry["source_dir"]
+    target_dir = Path(entry["target_dir"])
+    for source_name, target_relative_path in preserved_file_mappings(entry):
+        actual_bytes = (output_root / target_dir / target_relative_path).read_bytes()
+        expected_bytes = (source_dir / source_name).read_bytes()
+        if actual_bytes != expected_bytes:
+            raise ConversionError(
+                "Preserved runtime companion does not match the current source file: "
+                f"{target_dir / target_relative_path}"
             )
 
 
@@ -520,7 +577,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Validate the current source against the before snapshot and compare the generated output to the seeded after-reference commit.",
+        help="Validate the current source against the pinned before snapshot commit and compare the generated output to the seeded after snapshot files.",
     )
     return parser.parse_args()
 
@@ -543,12 +600,14 @@ def main() -> int:
 
     snapshot = load_yaml(ROOT_DIR / entry["seeded_snapshot"]["file"])
     validate_before_snapshot(entry, snapshot)
+    if args.check:
+        validate_before_snapshot_contents(snapshot)
 
     output_root = build_output_root(args.output_dir)
     convert_design_thinking(entry, output_root)
 
     if args.check:
-        compare_generated_to_reference(output_root, snapshot)
+        compare_generated_to_snapshot(entry, output_root, snapshot)
 
     print(f"workflow={entry['id']}")
     print(f"output_root={output_root}")
