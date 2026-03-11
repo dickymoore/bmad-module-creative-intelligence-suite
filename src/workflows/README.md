@@ -51,7 +51,7 @@ Five interactive workflows facilitating creative and strategic processes through
 
 **Output:** Root cause identification and solution strategies
 
-### [Storytelling](./storytelling)
+### [Storytelling](./bmad-cis-storytelling)
 
 **Purpose:** Craft compelling narratives
 

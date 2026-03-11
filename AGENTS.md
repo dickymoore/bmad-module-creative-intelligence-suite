@@ -41,7 +41,7 @@ src/
 │   ├── bmad-cis-design-thinking/
 │   ├── bmad-cis-innovation-strategy/
 │   ├── bmad-cis-problem-solving/
-│   ├── storytelling/
+│   ├── bmad-cis-storytelling/
 │   └── ...mixed legacy/native during transition
 ├── teams/               # Multi-agent collaboration configs
 └── module.yaml          # Module metadata and installation config
